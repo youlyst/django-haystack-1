@@ -9,6 +9,7 @@ from django.utils import datetime_safe, six
 from haystack.exceptions import SearchFieldError
 from haystack.utils import get_model_ct_tuple
 
+from django.core.exceptions import ObjectDoesNotExist
 
 class NOT_PROVIDED:
     pass
