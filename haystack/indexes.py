@@ -81,27 +81,10 @@ class DeclarativeMetaclass(type):
         return super(DeclarativeMetaclass, cls).__new__(cls, name, bases, attrs)
 
 
-class SearchIndex(with_metaclass(DeclarativeMetaclass, threading.local)):
+class BaseSearchIndex(object):
     """
-    Base class for building indexes.
-
-    An example might look like this::
-
-        import datetime
-        from haystack import indexes
-        from myapp.models import Note
-
-        class NoteIndex(indexes.SearchIndex, indexes.Indexable):
-            text = indexes.CharField(document=True, use_template=True)
-            author = indexes.CharField(model_attr='user')
-            pub_date = indexes.DateTimeField(model_attr='pub_date')
-
-            def get_model(self):
-                return Note
-
-            def index_queryset(self, using=None):
-                return self.get_model().objects.filter(pub_date__lte=datetime.datetime.now())
-
+    Interface definition for SearchIndex
+    we need this separated to allow subclassing 
     """
     def __init__(self):
         self.prepared_data = None
@@ -353,6 +336,30 @@ class SearchIndex(with_metaclass(DeclarativeMetaclass, threading.local)):
         By default, returns ``all()`` on the model's default manager.
         """
         return self.get_model()._default_manager.all()
+
+
+class SearchIndex(with_metaclass(DeclarativeMetaclass, BaseSearchIndex, threading.local)):
+    """
+    Base class for building indexes.
+
+    An example might look like this::
+
+        import datetime
+        from haystack import indexes
+        from myapp.models import Note
+
+        class NoteIndex(indexes.SearchIndex, indexes.Indexable):
+            text = indexes.CharField(document=True, use_template=True)
+            author = indexes.CharField(model_attr='user')
+            pub_date = indexes.DateTimeField(model_attr='pub_date')
+
+            def get_model(self):
+                return Note
+
+            def index_queryset(self, using=None):
+                return self.get_model().objects.filter(pub_date__lte=datetime.datetime.now())
+
+    """
 
 
 class BasicSearchIndex(SearchIndex):

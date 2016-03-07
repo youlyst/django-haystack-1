@@ -402,7 +402,7 @@ class SearchNode(tree.Node):
 
     def split_expression(self, expression):
         """Parses an expression and determines the field and filter type."""
-        parts = expression.split(FILTER_SEPARATOR)
+        parts = expression.rsplit(FILTER_SEPARATOR, 1)
         field = parts[0]
 
         if len(parts) == 1 or parts[-1] not in VALID_FILTERS:
