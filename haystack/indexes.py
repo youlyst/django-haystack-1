@@ -81,11 +81,30 @@ class DeclarativeMetaclass(type):
         return super(DeclarativeMetaclass, cls).__new__(cls, name, bases, attrs)
 
 
-class BaseSearchIndex(object):
+class SearchIndex(with_metaclass(DeclarativeMetaclass, threading.local)):
+
     """
-    Interface definition for SearchIndex
-    we need this separated to allow subclassing 
+    Base class for building indexes.
+
+    An example might look like this::
+
+        import datetime
+        from haystack import indexes
+        from myapp.models import Note
+
+        class NoteIndex(indexes.SearchIndex, indexes.Indexable):
+            text = indexes.CharField(document=True, use_template=True)
+            author = indexes.CharField(model_attr='user')
+            pub_date = indexes.DateTimeField(model_attr='pub_date')
+
+            def get_model(self):
+                return Note
+
+            def index_queryset(self, using=None):
+                return self.get_model().objects.filter(pub_date__lte=datetime.datetime.now())
+
     """
+
     def __init__(self):
         self.prepared_data = None
         content_fields = []
@@ -338,30 +357,6 @@ class BaseSearchIndex(object):
         return self.get_model()._default_manager.all()
 
 
-class SearchIndex(with_metaclass(DeclarativeMetaclass, BaseSearchIndex, threading.local)):
-    """
-    Base class for building indexes.
-
-    An example might look like this::
-
-        import datetime
-        from haystack import indexes
-        from myapp.models import Note
-
-        class NoteIndex(indexes.SearchIndex, indexes.Indexable):
-            text = indexes.CharField(document=True, use_template=True)
-            author = indexes.CharField(model_attr='user')
-            pub_date = indexes.DateTimeField(model_attr='pub_date')
-
-            def get_model(self):
-                return Note
-
-            def index_queryset(self, using=None):
-                return self.get_model().objects.filter(pub_date__lte=datetime.datetime.now())
-
-    """
-
-
 class BasicSearchIndex(SearchIndex):
     text = CharField(document=True, use_template=True)
 
@@ -429,7 +424,10 @@ class ModelSearchIndex(SearchIndex):
             # Add in the new fields.
             self.fields.update(self.get_fields(fields, excludes))
 
+        self.field_map = dict()
         for field_name, field in self.fields.items():
+            #form field map
+            self.field_map[field.index_fieldname] = field_name
             if field.document is True:
                 content_fields.append(field_name)
 
